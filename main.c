@@ -17,10 +17,18 @@ int contador = 1;              // Contador para definir qual led vai ser ativado
 absolute_time_t turn_off_time; // Variável para armazenar o tempo de desligamento dos LEDS
 // Variável que armazena o tempo do último evento, em microssegundos
 static volatile uint32_t last_time = 0; 
+bool led_active = false;       // Variável do estado do LED
 
 // Função de callback para desligar os LEDS após o tempo programado
 int64_t turn_off_callback(alarm_id_t id, void *user_data){
-    
+    gpio_put(RGB_GREEN, 0);
+    sleep_ms(3000);
+    gpio_put(RGB_BLUE, 0);
+    sleep_ms(3000);
+    gpio_put(RGB_RED, 0);
+
+    // Atualizando led_active para false
+    led_active = false;
 
     return 0;
 }
@@ -45,14 +53,17 @@ int main(){
         uint32_t current_time = to_us_since_boot(get_absolute_time());
 
         // Verificando se o botão foi pressionado
-        if (gpio_get(BUTTON_A) == 0){
-            // Verificação do efetio de debounce
+        if (gpio_get(BUTTON_A) == 0 && !led_active){
+            // Verificação do efeito de debounce
             if(current_time - last_time > 200000){
                 // Atualizando o last_time para a próxima verificação do debounce
                 last_time = current_time;
 
                 // Ligando todos os LEDs na máscara definida anteriormente
                 gpio_put_masked(OUTPUT_MASK, OUTPUT_MASK);
+
+                // Definindo led_active como true para indicar que os LEDs estão acesos
+                led_active = true;
 
                 // Agenda um alarme para desligar os LEDs após 3 segundos
                 add_alarm_in_ms(atraso, turn_off_callback, NULL, false);
