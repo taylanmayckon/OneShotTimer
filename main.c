@@ -13,22 +13,34 @@
 #define OUTPUT_MASK ((1 << RGB_BLUE) | (1 << RGB_GREEN) | (1 << RGB_RED))
 
 uint16_t atraso = 3000;        // Atraso em ms
-int contador = 1;              // Contador para definir qual led vai ser ativado
 absolute_time_t turn_off_time; // Variável para armazenar o tempo de desligamento dos LEDS
 // Variável que armazena o tempo do último evento, em microssegundos
 static volatile uint32_t last_time = 0; 
 bool led_active = false;       // Variável do estado do LED
 
+// Definindo um vetor para os LEDs na ordem de desativação
+int LEDS[3] = {RGB_GREEN, RGB_BLUE, RGB_RED};
+// Contador para iterar a desativação dos LEDs
+int contador = 0; 
+
 // Função de callback para desligar os LEDS após o tempo programado
 int64_t turn_off_callback(alarm_id_t id, void *user_data){
-    gpio_put(RGB_GREEN, 0);
-    sleep_ms(3000);
-    gpio_put(RGB_BLUE, 0);
-    sleep_ms(3000);
-    gpio_put(RGB_RED, 0);
-
-    // Atualizando led_active para false
-    led_active = false;
+    // Condição de parada
+    if(contador > 2){
+        // Reseta o contador
+        contador = 0;
+        // Atualiza led_active para false para permitir novas leituras
+        led_active = false;
+        // Retorno da função
+        return 0;
+    }
+    
+    // Desativa o LED 1 a 1
+    gpio_put(LEDS[contador], 0);
+    // Incrementa o contador
+    contador++;
+    // Aciona o alarme da função de callback novamente para desativar o próximo
+    add_alarm_in_ms(atraso, turn_off_callback, NULL, false);
 
     return 0;
 }
